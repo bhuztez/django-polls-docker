@@ -1,0 +1,105 @@
+- hosts: localhost
+  gather_facts: no
+
+  tasks:
+  - name: docker_network/django-polls
+    docker_network:
+     name: django-polls
+
+  - name: docker_image/python3
+    docker_image:
+      name: python:3-alpine
+
+  - name: docker_image/postgres
+    docker_image:
+      name: postgres
+
+  - name: docker_container/database
+    docker_container:
+     name: django-polls-database
+     image: postgres
+     networks:
+     - name: django-polls
+
+  - name: docker_container/shell
+    docker_container:
+     name: django-polls-shell
+     image: python:3-alpine
+     volumes:
+     - "{{ playbook_dir }}:/usr/src/app:z"
+     published_ports:
+     - "8000:8000"
+     exposed_ports:
+     - 8000
+     command: busybox syslogd -n -O /dev/stdout
+     working_dir: /usr/src/app
+     networks:
+     - name: django-polls
+
+  - add_host:
+     name: django-polls-shell
+     ansible_connection: docker
+     ansible_python_interpreter: /usr/local/bin/python
+
+- hosts: django-polls-shell
+  gather_facts: no
+
+  tasks:
+  - name: ensure openrc,gcc,libc-dev,linux-headers,postgresql-dev,postgresql-client installed
+    apk:
+     name: openrc,gcc,libc-dev,linux-headers,postgresql-dev,postgresql-client
+     state: present
+
+  - when: PYPIMIRROR is not defined
+    set_fact:
+     PYPIMIRROR: "https://pypi.python.org/simple"
+
+  - name: pip install -r requirements.txt
+    pip:
+     requirements: /usr/src/app/requirements.txt
+     extra_args: "-i {{ PYPIMIRROR }}"
+
+  - register: psql
+    command: psql -l -h django-polls-database -U postgres
+    until: psql.rc == 0
+    retries: 5
+    delay: 1
+    changed_when: false
+
+  - when: RESET is defined
+    name: ensure db dropped
+    postgresql_db:
+      name: django-polls
+      login_host: django-polls-database
+      login_user: postgres
+      state: absent
+
+  - name: ensure db created
+    postgresql_db:
+      name: django-polls
+      login_host: django-polls-database
+      login_user: postgres
+      state: present
+
+  - name: python manage.py migrate
+    django_manage:
+     command: migrate
+     app_path: .
+
+  - when: TEST is defined
+    name: python manage.py test
+    django_manage:
+     command: test
+     app_path: .
+
+  - name: uwsgi
+    command: start-stop-daemon -S -b --name uwsgi -d /usr/src/app -x uwsgi -- --ini uwsgi.ini
+    register: uwsgi
+    failed_when: uwsgi.rc > 1
+
+- hosts: localhost
+  gather_facts: no
+
+  tasks:
+  - debug:
+     msg: "web server running at http://127.0.0.1:8000/"
