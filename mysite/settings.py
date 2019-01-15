@@ -1,6 +1,6 @@
 import os
 
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 SECRET_KEY = 's9idv+rs=3$=9st72$mnnf)u0=$rjw@wz9=x43u8hbo7z$(5q+'
 
@@ -45,6 +45,8 @@ TEMPLATES = [
         },
     },
 ]
+
+FIXTURE_DIRS = [os.path.join(BASE_DIR, 'fixtures')]
 
 WSGI_APPLICATION = 'mysite.wsgi.application'
 

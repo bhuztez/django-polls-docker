@@ -86,6 +86,11 @@
      command: migrate
      app_path: .
 
+  - name: python manage.py loaddata develop
+    django_manage:
+     command: loaddata develop
+     app_path: .
+
   - when: TEST is defined
     name: python manage.py test
     django_manage:
@@ -102,4 +107,4 @@
 
   tasks:
   - debug:
-     msg: "web server running at http://127.0.0.1:8000/"
+     msg: "web server running at http://127.0.0.1:8000/ admin:123456"

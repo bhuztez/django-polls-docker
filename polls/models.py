@@ -18,6 +18,9 @@ class Question(models.Model):
     was_published_recently.boolean = True
     was_published_recently.short_description = 'Published recently?'
 
+    def get_absolute_url(self):
+        from django.urls import reverse
+        return reverse('polls:detail', args=[str(self.id)])
 
 class Choice(models.Model):
     question = models.ForeignKey(Question, on_delete=models.CASCADE)

@@ -1,0 +1,29 @@
+- model: polls.question
+  pk: 1
+  fields:
+    question_text: 'What''s up?'
+    pub_date: !!timestamp '2015-09-06 21:16:22+00:00'
+- model: polls.choice
+  pk: 1
+  fields:
+    question: 1
+    choice_text: Choice A
+- model: polls.choice
+  pk: 2
+  fields:
+    question: 1
+    choice_text: Choice B
+- model: polls.choice
+  pk: 3
+  fields:
+    question: 1
+    choice_text: Choice C
+- model: auth.user
+  pk: 1
+  fields:
+    password: pbkdf2_sha256$120000$Fl4JExxu99Or$GD9EgkrHHeij5m2Ub+BZ9jbbPUIgbwBZiRZzMVMa4/0=
+    is_superuser: true
+    username: admin
+    email: admin@example.com
+    is_staff: true
+    is_active: true
