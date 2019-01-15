@@ -14,10 +14,27 @@
     docker_image:
       name: postgres
 
+  - when: TEST is defined
+    name: docker_image/selenium
+    docker_image:
+     name: selenium/standalone-firefox
+
   - name: docker_container/database
     docker_container:
      name: django-polls-database
      image: postgres
+     networks:
+     - name: django-polls
+
+  - when: TEST is defined
+    name: docker_container/selenium
+    docker_container:
+     name: django-polls-selenium
+     image: selenium/standalone-firefox
+     published_ports:
+     - "4444:4444"
+     volumes:
+     - "/dev/shm:/dev/shm:z"
      networks:
      - name: django-polls
 

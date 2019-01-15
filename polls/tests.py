@@ -1,6 +1,10 @@
 import datetime
+import socket
 
-from django.test import TestCase
+from selenium import webdriver
+from selenium.webdriver.common.desired_capabilities import DesiredCapabilities
+
+from django.test import TestCase, LiveServerTestCase
 from django.utils import timezone
 from django.urls import reverse
 
@@ -127,3 +131,37 @@ class QuestionDetailViewTests(TestCase):
         url = reverse('polls:detail', args=(past_question.id,))
         response = self.client.get(url)
         self.assertContains(response, past_question.question_text)
+
+class QuestionDetailViewLiveServerTests(LiveServerTestCase):
+    host = socket.gethostbyname_ex(socket.gethostname())[2][1]
+
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        cls.selenium = webdriver.Remote('http://django-polls-selenium:4444/wd/hub', DesiredCapabilities.FIREFOX)
+        cls.selenium.implicitly_wait(10)
+
+    @classmethod
+    def tearDownClass(cls):
+        cls.selenium.quit()
+        super().tearDownClass()
+
+    def test_future_question(self):
+        """
+        The detail view of a question with a pub_date in the future
+        returns a 404 not found.
+        """
+        future_question = create_question(question_text='Future question.', days=5)
+        url = reverse('polls:detail', args=(future_question.id,))
+        self.selenium.get(self.live_server_url + url)
+        self.assertIn("Not Found", self.selenium.page_source)
+
+    def test_past_question(self):
+        """
+        The detail view of a question with a pub_date in the past
+        displays the question's text.
+        """
+        past_question = create_question(question_text='Past Question.', days=-5)
+        url = reverse('polls:detail', args=(past_question.id,))
+        self.selenium.get(self.live_server_url + url)
+        self.selenium.find_element_by_xpath("//h1[contains(text(), 'Past Question.')]")
